@@ -268,6 +268,10 @@ open class SegmentedControl: UIControl {
             }
         }
     }
+    
+    open override var intrinsicContentSize: CGSize {
+        return CGSize(width: totalContentWidth(), height: frame.height)
+    }
 }
 
 public extension SegmentedControl {
@@ -275,26 +279,19 @@ public extension SegmentedControl {
     fileprivate func update() {
         scrollView.frame = CGRect(origin: CGPoint.zero, size: frame.size)
         scrollView.isScrollEnabled = isUserDragEnabled
-
-        switch layoutPolicy {
-        case .fixed:
-            scrollView.contentSize = CGSize(width: totalSegmentsWidth(), height: frame.height)
-            scrollView.contentInset = UIEdgeInsets.zero
-        case .dynamic:
-            scrollView.contentSize = CGSize(width: totalSegmentsWidth() + contentInset.left + contentInset.right, height: frame.height)
-            if (totalSegmentsWidth() + contentInset.left + contentInset.right) < frame.width {
-                let padding = (frame.width - totalSegmentsWidth()) / 2
-                scrollView.contentInset = UIEdgeInsets(top: 0, left: padding - contentInset.left, bottom: 0, right: padding - contentInset.right)
-            } else {
-                scrollView.contentInset = UIEdgeInsets.zero
-            }
+        scrollView.contentSize = CGSize(width: totalContentWidth(), height: frame.height)
+        scrollView.contentInset = UIEdgeInsets.zero
+        
+        if layoutPolicy == .dynamic && totalContentWidth() < frame.width {
+            let padding = (frame.width - totalSegmentsWidth()) / 2
+            scrollView.contentInset = UIEdgeInsets(top: 0, left: padding - contentInset.left, bottom: 0, right: padding - contentInset.right)
         }
 
         scrollToSelectedIndex(animated: false)
     }
 
     fileprivate func scrollToSelectedIndex(animated: Bool) {
-        if layoutPolicy == .dynamic && (totalSegmentsWidth() + contentInset.left + contentInset.right) < frame.width {
+        if layoutPolicy == .dynamic && totalContentWidth() < frame.width {
             return
         }
 
@@ -767,6 +764,15 @@ public extension SegmentedControl {
             return Array(repeating: singleSegmentWidth(), count: index)
         case .dynamic:
             return titleSizes[0..<index].enumerated().map { singleSegmentWidth(at: $0.offset) }
+        }
+    }
+    
+    fileprivate func totalContentWidth() -> CGFloat {
+        switch layoutPolicy {
+        case .fixed:
+            return totalSegmentsWidth()
+        case .dynamic:
+            return totalSegmentsWidth() + contentInset.left + contentInset.right
         }
     }
 }
